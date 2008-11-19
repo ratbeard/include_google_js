@@ -17,8 +17,8 @@ module IncludeGoogleJs
   def javascript_include_tag_with_google_js(*sources)
     options                 = sources.extract_options!.stringify_keys
     cache                   = options.delete("cache")
-    @@include_google_js     = options.delete("include_google_js") if options.include?("include_google_js") && IncludeGoogleJs.confirm_internet_connection
-    @@javascript_versions   = options.delete("versions") if options.include?("versions")
+    @@include_google_js     = options.delete("include_google_js") && IncludeGoogleJs.confirm_internet_connection
+    @@javascript_versions   = options.delete("versions") || {}
     
     @@google_js_to_include  = []
 
