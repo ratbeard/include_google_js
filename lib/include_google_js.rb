@@ -3,7 +3,7 @@ module IncludeGoogleJs
   
   @@javascript_expansions = { :defaults => ActionView::Helpers::AssetTagHelper::JAVASCRIPT_DEFAULT_SOURCES.dup }
   @@include_google_js = false
-  @@google_js_libs = ['prototype', 'scriptaculous', 'jquery', 'mootools', 'dojo']
+  @@google_js_libs = ['prototype', 'scriptaculous', 'jquery', 'mootools', 'dojo','swfobject','yui']
   @@scriptaculous_files = ['controls','dragdrop','effects']
   @@default_google_js_libs = ['prototype','scriptaculous']
   @@google_js_to_include = []
@@ -53,7 +53,7 @@ module IncludeGoogleJs
     if sources.include?(:all)
       all_javascript_files = Dir[File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, '*.js')].collect { |file| File.basename(file).gsub(/\.\w+$/, '') }.sort
       all_javascript_files = IncludeGoogleJs.determine_if_google_hosts_files(all_javascript_files) if @@include_google_js
-      @@all_javascript_sources ||= ((determine_source(:defaults, @@javascript_expansions).dup & all_javascript_files) + all_javascript_files).uniq
+      @@all_javascript_sources ||= ((IncludeGoogleJs.determine_source(:defaults, @@javascript_expansions).dup & all_javascript_files) + all_javascript_files).uniq
     else
       defaults = sources.include?(:defaults)
       expanded_sources = []
@@ -61,17 +61,13 @@ module IncludeGoogleJs
         expanded_sources += IncludeGoogleJs.default_sources 
       else
         expanded_sources += sources.collect do |source|
-          determine_source(source, @@javascript_expansions)
+          IncludeGoogleJs.determine_source(source, @@javascript_expansions)
         end.flatten
       end
       expanded_sources = IncludeGoogleJs.determine_if_google_hosts_files(expanded_sources) if @@include_google_js
       expanded_sources << "application" if File.exist?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "application.js")) && defaults
       return expanded_sources
     end
-  end
-  
-  def expand_sources_with_google_js(sources)
-    expand_javascript_sources_with_google_js(sources)
   end
   
   def self.determine_if_google_hosts_files(javascript_files)
@@ -149,10 +145,44 @@ module IncludeGoogleJs
               break
             end
           end
+        when "yui"
+          File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "yui/build/yuiloader/yuiloader-min.js")).each do |line|
+            match = line.scan(/^version: (\d+.\d+.\d+)/x)
+            if match.size > 0
+              version = match.shift.to_s
+              match.each do |m|
+                version += "."+m.to_s
+              end
+              break
+            end
+          end
+          version = "2.6.0" if version == "1"
+        when "swfobject"
+          File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
+            match = line.scan(/SWFObject v(\d+.\d+)˝/x)
+            if match.size > 0
+              version = match.shift.to_s
+              match.each do |m|
+                version += "."+m.to_s
+              end
+              break
+            end
+          end
+          version = "2.1" if version == "1"
         else
           version = "1"
       end
     end
     return version
   end
+  
+  def self.determine_source(source, collection)
+    case source
+    when Symbol
+      collection[source] || raise(ArgumentError, "No expansion found for #{source.inspect}")
+    else
+      source
+    end
+  end
+  
 end
