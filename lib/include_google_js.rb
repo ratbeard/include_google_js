@@ -11,7 +11,6 @@ module IncludeGoogleJs
   
   def self.included(base) 
     base.alias_method_chain :javascript_include_tag, :google_js
-    base.alias_method_chain :expand_javascript_sources, :google_js
   end
   
   def javascript_include_tag_with_google_js(*sources)
@@ -29,7 +28,7 @@ module IncludeGoogleJs
       write_asset_file_contents(joined_javascript_path, compute_javascript_paths(sources))
       javascript_src_tag(joined_javascript_name, options)
     else
-      base_html = expand_javascript_sources(sources).collect { |source| javascript_src_tag(source, options) }.join("\n")
+      base_html = IncludeGoogleJs.expand_javascript_sources(sources).collect { |source| javascript_src_tag(source, options) }.join("\n")
       if @@include_google_js
         html = %Q{
           <script src='http://www.google.com/jsapi'></script>
@@ -50,7 +49,7 @@ module IncludeGoogleJs
     end
   end
 
-  def expand_javascript_sources_with_google_js(sources)
+  def self.expand_javascript_sources(sources)
     if sources.include?(:all)
       all_javascript_files = Dir[File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, '*.js')].collect { |file| File.basename(file).gsub(/\.\w+$/, '') }.sort
       all_javascript_files = IncludeGoogleJs.determine_if_google_hosts_files(all_javascript_files) if @@include_google_js
@@ -71,6 +70,9 @@ module IncludeGoogleJs
     end
   end
   
+  def expand_sources_with_google_js(sources)
+    expand_javascript_sources_with_google_js(sources)
+  end
   
   def self.determine_if_google_hosts_files(javascript_files)
     @@google_js_to_include = []
@@ -119,7 +121,7 @@ module IncludeGoogleJs
               break
             end
           end
-        when "scriptaculous"
+        when "scriptaculous" # Currently no version information in Scriptaculous w/ Rails. Contacted Thomas Fuchs to see if it can't be added in the future.
           version = "1"
         when "jquery"
           version_array = []
