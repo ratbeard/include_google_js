@@ -106,35 +106,41 @@ module IncludeGoogleJs
   
   def self.get_file_version(file_name)
     version = "1"
-    if File.exist?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file_name}.js"))
-      # split file_name for jquery
-      file = file_name.split("-")[0]
-      case file
-        when "prototype"
+    # split file_name for jquery
+    file = file_name.split("-")[0]
+    case file
+      when "prototype"
+        if File.exist?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file_name}.js"))
           File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
             if line.include?("Version")
               version = line.match(/[\d.]+/)[0]
               break
             end
           end
-        when "scriptaculous" # Currently no version information in Scriptaculous w/ Rails. Contacted Thomas Fuchs to see if it can't be added in the future.
-          version = "1"
-        when "jquery"
-          version_array = []
-          file_version = file_name.split("-")[1].nil? ?  "" : "-"+file_name.split("-")[1]
+        end
+      when "scriptaculous" # Currently no version information in Scriptaculous w/ Rails. Contacted Thomas Fuchs to see if it can't be added in the future.
+        version = "1"
+      when "jquery"
+        version_array = []
+        file_version = file_name.split("-")[1].nil? ?  "" : "-"+file_name.split("-")[1]
+        if File.exists?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file+file_version}.js"))
           File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file+file_version}.js")).each do |line|
             version_array = line.scan(/jquery:\W?"([\d.]+)"/x)
             break if version_array.size > 0
           end
-          version = version_array.first.to_s
-        when "mootools"
+        end
+        version = version_array.first.to_s
+      when "mootools"
+        if File.exists?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js"))
           File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
             if line.include?("version")
               version = line.match(/version':\W?'([\d.]+)'/)[1]
               break
             end
           end
-        when "dojo"
+        end
+      when "dojo"
+        if File.exists?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js"))
           File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
             match = line.scan(/\b[major|minor|patch]{5}:([\d]+)/x)
             if match.size > 0
@@ -145,7 +151,9 @@ module IncludeGoogleJs
               break
             end
           end
-        when "yui"
+        end
+      when "yui"
+        if File.exists?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "yui/build/yuiloader/yuiloader-min.js"))
           File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "yui/build/yuiloader/yuiloader-min.js")).each do |line|
             match = line.scan(/^version: (\d+.\d+.\d+)/x)
             if match.size > 0
@@ -156,8 +164,10 @@ module IncludeGoogleJs
               break
             end
           end
-          version = "2.6.0" if version == "1"
-        when "swfobject"
+        end
+        version = "2.6.0" if version == "1"
+      when "swfobject"
+        if File.exists?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js"))
           File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
             match = line.scan(/SWFObject v(\d+.\d+)˝/x)
             if match.size > 0
@@ -168,10 +178,10 @@ module IncludeGoogleJs
               break
             end
           end
-          version = "2.1" if version == "1"
-        else
-          version = "1"
-      end
+        end
+        version = "2.1" if version == "1"
+      else
+        version = "1"
     end
     return version
   end
