@@ -1,24 +1,125 @@
-require 'test/unit'
+require 'test_helper'
 
 class IncludeGoogleJsTest < Test::Unit::TestCase
-  JavascriptIncludeToTag = {
-    %(javascript_include_tag_with_google_js("xmlhr")) => %(<script src="/javascripts/xmlhr.js" type="text/javascript"></script>),
-    %(javascript_include_tag_with_google_js("xmlhr.js")) => %(<script src="/javascripts/xmlhr.js" type="text/javascript"></script>),
-    %(javascript_include_tag_with_google_js("xmlhr", :lang => "vbscript")) => %(<script lang="vbscript" src="/javascripts/xmlhr.js" type="text/javascript"></script>),
-    %(javascript_include_tag_with_google_js("common.javascript", "/elsewhere/cools")) => %(<script src="/javascripts/common.javascript" type="text/javascript"></script>\n<script src="/elsewhere/cools.js" type="text/javascript"></script>),
-    %(javascript_include_tag_with_google_js(:defaults)) => %(<script src="/javascripts/prototype.js" type="text/javascript"></script>\n<script src="/javascripts/effects.js" type="text/javascript"></script>\n<script src="/javascripts/dragdrop.js" type="text/javascript"></script>\n<script src="/javascripts/controls.js" type="text/javascript"></script>\n<script src="/javascripts/application.js" type="text/javascript"></script>),
-    %(javascript_include_tag_with_google_js(:all)) => %(<script src="/javascripts/prototype.js" type="text/javascript"></script>\n<script src="/javascripts/effects.js" type="text/javascript"></script>\n<script src="/javascripts/dragdrop.js" type="text/javascript"></script>\n<script src="/javascripts/controls.js" type="text/javascript"></script>\n<script src="/javascripts/application.js" type="text/javascript"></script>\n<script src="/javascripts/bank.js" type="text/javascript"></script>\n<script src="/javascripts/robber.js" type="text/javascript"></script>\n<script src="/javascripts/version.1.0.js" type="text/javascript"></script>),
-    %(javascript_include_tag_with_google_js(:defaults, "test")) => %(<script src="/javascripts/prototype.js" type="text/javascript"></script>\n<script src="/javascripts/effects.js" type="text/javascript"></script>\n<script src="/javascripts/dragdrop.js" type="text/javascript"></script>\n<script src="/javascripts/controls.js" type="text/javascript"></script>\n<script src="/javascripts/test.js" type="text/javascript"></script>\n<script src="/javascripts/application.js" type="text/javascript"></script>),
-    %(javascript_include_tag_with_google_js("test", :defaults)) => %(<script src="/javascripts/test.js" type="text/javascript"></script>\n<script src="/javascripts/prototype.js" type="text/javascript"></script>\n<script src="/javascripts/effects.js" type="text/javascript"></script>\n<script src="/javascripts/dragdrop.js" type="text/javascript"></script>\n<script src="/javascripts/controls.js" type="text/javascript"></script>\n<script src="/javascripts/application.js" type="text/javascript"></script>)
-  }
   
-  def test_javascript_include_tag
-    ENV["RAILS_ASSET_ID"] = ""
-    JavascriptIncludeToTag.each { |method, tag| assert_dom_equal(tag, eval(method)) }
+  include ActionView::Helpers::TagHelper
+  include ActionView::Helpers::AssetTagHelper
 
-    ActionView::Base.computed_public_paths.clear
+  def test_javascript_defaults_tag_with_google
+    string           = javascript_include_tag(:defaults, :include_google_js => true)
+    matched_values   = ["google.load(\"prototype\", \"1.6.0.3\")", "google.load(\"scriptaculous\", \"1.8.2\")", "src=\"/javascripts/application.js"]
+    unmatched_values = ["src=\"/javascripts/prototype.js", "src=\"/javascripts/effects.js", "src=\"/javascripts/dragdrop.js", "src=\"/javascripts/controls.js"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
+  def test_javascript_defaults_tag_without_google
+    string           = javascript_include_tag(:defaults, :include_google_js => false)
+    matched_values   = ["src=\"/javascripts/prototype.js", "src=\"/javascripts/effects.js", "src=\"/javascripts/dragdrop.js", "src=\"/javascripts/controls.js", "src=\"/javascripts/application.js"]
+    unmatched_values = ["google.load(\"prototype\", \"1.6.0.3\")", "google.load(\"scriptaculous\", \"1\")"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
+  def test_javascript_tag_for_prototype_with_google
+    string           = javascript_include_tag("prototype", :include_google_js => true)
+    matched_values   = ["google.load(\"prototype\", \"1.6.0.3\")"]
+    unmatched_values = ["src=\"/javascripts/prototype.js"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
+  def test_javascript_tag_for_prototype_with_google_and_declared_version
+    string           = javascript_include_tag("prototype", :include_google_js => true, :versions => {:prototype => "1.5"})
+    matched_values   = ["google.load(\"prototype\", \"1.5\")"]
+    unmatched_values = ["src=\"/javascripts/prototype.js"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
+  def test_javascript_tag_for_prototype_without_google
+    string           = javascript_include_tag("prototype", :include_google_js => false)
+    matched_values   = ["src=\"/javascripts/prototype.js"]
+    unmatched_values = ["google.load(\"prototype\", \"1.6.0.3\")"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
+  def test_javascript_tag_for_prototype_with_google
+    string           = javascript_include_tag("prototype", :include_google_js => true)
+    matched_values   = ["google.load(\"prototype\", \"1.6.0.3\")"]
+    unmatched_values = ["src=\"/javascripts/prototype.js"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
+  def test_javascript_tag_for_prototype_without_google
+    string           = javascript_include_tag("prototype", :include_google_js => false)
+    matched_values   = ["src=\"/javascripts/prototype.js"]
+    unmatched_values = ["google.load(\"prototype\", \"1.6.0.3\")"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
+  # JS Library Parsing  
+  def test_parsing_prototype_for_version
+    assert_equal "1.6.0.3", IncludeGoogleJs.parse_prototype if js_exists("prototype")
+  end
+  
+  def test_parsing_scriptaculous_for_version
+   assert_equal "1.8.2", IncludeGoogleJs.parse_scriptaculous if js_exists("scriptaculous")
+  end
+  
+  def test_parsing_jquery_for_version
+   assert_equal "1.3.2", IncludeGoogleJs.parse_jquery if js_exists("jquery")
+  end
+  
+  def test_parsing_mootools_for_version
+   assert_equal "1.2.2", IncludeGoogleJs.parse_mootools if js_exists("mootools")
+  end
+  
+  def test_parsing_dojo_for_version
+   assert_equal "1.3.1", IncludeGoogleJs.parse_dojo if js_exists("dojo")
+  end
+  
+  def test_parsing_yui_for_version
+   assert_equal "2.7.0", IncludeGoogleJs.parse_yui if js_exists("yui")
+  end
+  
+  def test_parsing_swfobject_for_version
+   assert_equal "2.1", IncludeGoogleJs.parse_swfobject if js_exists("swfobject")
+  end
+  
+  private
+  def should_match(string="", values=[])
+    check_values(string,values,true)
+  end
+  
+  def should_not_match(string="", values=[])
+    check_values(string,values,false)
+  end
 
-    ENV["RAILS_ASSET_ID"] = "1"
-    assert_dom_equal(%(<script src="/javascripts/prototype.js?1" type="text/javascript"></script>\n<script src="/javascripts/effects.js?1" type="text/javascript"></script>\n<script src="/javascripts/dragdrop.js?1" type="text/javascript"></script>\n<script src="/javascripts/controls.js?1" type="text/javascript"></script>\n<script src="/javascripts/application.js?1" type="text/javascript"></script>), javascript_include_tag_with_google_js(:defaults))
+  def check_values(string, values=[], match=true)
+    values.each do |value|
+      assert match ? string.include?(value) : !string.include?(value)
+    end
+  end
+  
+  def js_exists(library="")
+    case library
+      when "yui"
+        File.exist?("#{RAILS_ROOT}/public/javascripts/yui/")
+      when "swfobject"
+        File.exist?("#{RAILS_ROOT}/public/javascripts/swfobject/")
+      else
+        File.exist?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{library}.js"))    
+    end
   end
 end

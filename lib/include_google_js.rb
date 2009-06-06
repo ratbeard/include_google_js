@@ -110,76 +110,19 @@ module IncludeGoogleJs
     file = file_name.split("-")[0]
     case file
       when "prototype"
-        if File.exist?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file_name}.js"))
-          File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
-            if line.include?("Version")
-              version = line.match(/[\d.]+/)[0]
-              break
-            end
-          end
-        end
-      when "scriptaculous" # Currently no version information in Scriptaculous w/ Rails. Contacted Thomas Fuchs to see if it can't be added in the future.
-        version = "1"
+        version = IncludeGoogleJs.parse_prototype
+      when "scriptaculous"
+        version = IncludeGoogleJs.parse_scriptaculous(file_name)
       when "jquery"
-        version_array = []
-        file_version = file_name.split("-")[1].nil? ?  "" : "-"+file_name.split("-")[1]
-        if File.exists?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file+file_version}.js"))
-          File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file+file_version}.js")).each do |line|
-            version_array = line.scan(/jquery:\W?"([\d.]+)"/x)
-            break if version_array.size > 0
-          end
-        end
-        version = version_array.first.to_s
+        version = IncludeGoogleJs.parse_jquery(file_name)
       when "mootools"
-        if File.exists?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js"))
-          File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
-            if line.include?("version")
-              version = line.match(/version':\W?'([\d.]+)'/)[1]
-              break
-            end
-          end
-        end
+        version = IncludeGoogleJs.parse_mootools(file_name)
       when "dojo"
-        if File.exists?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js"))
-          File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
-            match = line.scan(/\b[major|minor|patch]{5}:([\d]+)/x)
-            if match.size > 0
-              version = match.shift.to_s
-              match.each do |m|
-                version += "."+m.to_s
-              end
-              break
-            end
-          end
-        end
+        version = IncludeGoogleJs.parse_dojo(file_name)
       when "yui"
-        if File.exists?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "yui/build/yuiloader/yuiloader-min.js"))
-          File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "yui/build/yuiloader/yuiloader-min.js")).each do |line|
-            match = line.scan(/^version: (\d+.\d+.\d+)/x)
-            if match.size > 0
-              version = match.shift.to_s
-              match.each do |m|
-                version += "."+m.to_s
-              end
-              break
-            end
-          end
-        end
-        version = "2.6.0" if version == "1"
+        version = IncludeGoogleJs.parse_yui(file_name)
       when "swfobject"
-        if File.exists?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js"))
-          File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
-            match = line.scan(/SWFObject v(\d+.\d+)˝/x)
-            if match.size > 0
-              version = match.shift.to_s
-              match.each do |m|
-                version += "."+m.to_s
-              end
-              break
-            end
-          end
-        end
-        version = "2.1" if version == "1"
+        version = IncludeGoogleJs.parse_swfobject(file_name)
       else
         version = "1"
     end
@@ -192,6 +135,70 @@ module IncludeGoogleJs
       collection[source] || raise(ArgumentError, "No expansion found for #{source.inspect}")
     else
       source
+    end
+  end
+  
+  def self.parse_for_version(file="")
+    if File.exist?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")) # Check for the JS file
+      case file.split("-")[0] # Split on '-' because of jQuery's file names with version numbers
+        when "prototype"
+          return IncludeGoogleJs.parse_prototype(file)
+        when "jquery"
+          return IncludeGoogleJs.parse_jquery(file)
+        else
+          return 1
+      end
+    end
+  end
+  
+  def self.parse_prototype(file="prototype")
+    File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
+      return line.match(/[\d.]+/)[0] if line.include?("Version")
+    end
+  end
+  
+  def self.parse_scriptaculous(file="scriptaculous")
+    File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
+      return line.match(/scriptaculous.js v([\d.]+)/i)[1]
+    end
+  end
+  
+  def self.parse_jquery(file="jquery")
+    File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
+      version_array = line.scan(/jquery:\W?"([\d.]+)"/x).to_s
+      return version_array.to_s unless version_array.blank?
+    end
+  end
+  
+  def self.parse_mootools(file="mootools")
+    File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
+      return line.match(/version:["|']([\d\.]+)["|']/i)[1] if line.include?("version")
+    end
+  end
+  
+  def self.parse_dojo(file="dojo")
+    version = nil
+    File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
+      match = line.scan(/\b[major|minor|patch]{5,}:([\d]+)/i)
+      if match.size > 0
+        version = match.shift.to_s
+        match.each do |x|
+          version += "."+x.to_s
+        end
+        return version
+      end
+    end
+  end
+  
+  def self.parse_yui(file="")
+    File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "yui/build/yuiloader/yuiloader-min.js")).each do |line|
+      return line.match(/^version: ([\d.]+)/i)[1] if line.match(/^version: ([\d.]+)/i)
+    end
+  end
+  
+  def self.parse_swfobject
+    File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "swfobject/swfobject.js")).each do |line|
+      return line.match(/SWFObject v([\d\.]+)/i)[1] if line.match(/SWFObject v([\d\.]+)/i)
     end
   end
   
