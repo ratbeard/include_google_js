@@ -3,7 +3,7 @@ module IncludeGoogleJs
   
   @@javascript_expansions = { :defaults => ActionView::Helpers::AssetTagHelper::JAVASCRIPT_DEFAULT_SOURCES.dup }
   @@include_google_js = false
-  @@google_js_libs = ['prototype', 'scriptaculous', 'jquery', 'mootools', 'dojo','swfobject','yui']
+  @@google_js_libs = %w[prototype scriptaculous jquery jqueryui mootools dojo yui swfobject]
   @@scriptaculous_files = ['controls','dragdrop','effects']
   @@default_google_js_libs = ['prototype','scriptaculous']
   @@google_js_to_include = []
@@ -14,21 +14,22 @@ module IncludeGoogleJs
   end
   
   def javascript_include_tag_with_google_js(*sources)
-    options                 = sources.extract_options!.stringify_keys
-    cache                   = options.delete("cache")
-    @@include_google_js     = options.delete("include_google_js") && IncludeGoogleJs.confirm_internet_connection
-    @@javascript_versions   = options.delete("versions") || {}
+    # split apart the sources, check for :cache, confirm that we're using :include_google_js, and grab :versions
+    libraries               = sources.extract_options!.stringify_keys
+    use_cache               = libraries.delete("cache")
+    @@include_google_js     = libraries.delete("include_google_js") && IncludeGoogleJs.confirm_internet_connection
+    @@javascript_versions   = libraries.delete("versions") || {}
     
     @@google_js_to_include  = []
-
-    if ActionController::Base.perform_caching && cache
-      joined_javascript_name = (cache == true ? "all" : cache) + ".js"
+    
+    if ActionController::Base.perform_caching && use_cache # Using the locally cached libraries
+      joined_javascript_name = (cache == true ? "all" : use_cache) + ".js"
       joined_javascript_path = File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, joined_javascript_name)
 
       write_asset_file_contents(joined_javascript_path, compute_javascript_paths(sources))
-      javascript_src_tag(joined_javascript_name, options)
-    else
-      base_html = IncludeGoogleJs.expand_javascript_sources(sources).collect { |source| javascript_src_tag(source, options) }.join("\n")
+      javascript_src_tag(joined_javascript_name, libraries)
+    else # Using Google libraries
+      base_html = IncludeGoogleJs.expand_javascript_sources(sources).collect { |source| javascript_src_tag(source, libraries) }.join("\n")
       if @@include_google_js
         html = %Q{
           <script src='http://www.google.com/jsapi'></script>
@@ -50,7 +51,7 @@ module IncludeGoogleJs
   end
 
   def self.expand_javascript_sources(sources)
-    if sources.include?(:all)
+    if sources.include?(:all) # All libraries, get everything in the javascripts folder, see which are hosted by Google
       all_javascript_files = Dir[File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, '*.js')].collect { |file| File.basename(file).gsub(/\.\w+$/, '') }.sort
       all_javascript_files = IncludeGoogleJs.determine_if_google_hosts_files(all_javascript_files) if @@include_google_js
       @@all_javascript_sources ||= ((IncludeGoogleJs.determine_source(:defaults, @@javascript_expansions).dup & all_javascript_files) + all_javascript_files).uniq
@@ -75,7 +76,6 @@ module IncludeGoogleJs
     javascript_files.each do |file|
       if @@google_js_libs.include?(file.split("-")[0])
         @@google_js_to_include << file
-        # IncludeGoogleJs.get_file_version(file)
       end
       if @@scriptaculous_files.include?(file)
         @@google_js_to_include << 'scriptaculous' unless @@google_js_to_include.include?('scriptaculous')
@@ -115,6 +115,8 @@ module IncludeGoogleJs
         version = IncludeGoogleJs.parse_scriptaculous(file_name)
       when "jquery"
         version = IncludeGoogleJs.parse_jquery(file_name)
+      when "jqueryui"
+        version = IncludeGoogleJs.parse_jquery_ui(file_name)
       when "mootools"
         version = IncludeGoogleJs.parse_mootools(file_name)
       when "dojo"
@@ -143,8 +145,20 @@ module IncludeGoogleJs
       case file.split("-")[0] # Split on '-' because of jQuery's file names with version numbers
         when "prototype"
           return IncludeGoogleJs.parse_prototype(file)
+        when "scriptaculous"
+          return IncludeGoogleJs.parse_scriptaculous(file)
         when "jquery"
           return IncludeGoogleJs.parse_jquery(file)
+        when "jqueryui"
+          return IncludeGoogleJs.parse_jquery_ui(file)
+        when "mootools"
+          return IncludeGoogleJs.parse_mootools(file)
+        when "dojo"
+          return IncludeGoogleJs.parse_dojo(file)
+        when "yui"
+          return IncludeGoogleJs.parse_yui(file)
+        when "swfobject"
+          return IncludeGoogleJs.parse_swfobject(file)
         else
           return 1
       end
@@ -166,6 +180,13 @@ module IncludeGoogleJs
   def self.parse_jquery(file="jquery")
     File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
       version_array = line.scan(/jquery:\W?"([\d.]+)"/x).to_s
+      return version_array.to_s unless version_array.blank?
+    end
+  end
+  
+  def self.parse_jquery_ui(file="jquery-ui")
+    File.open(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{file}.js")).each do |line|
+      version_array = line.scan(/version:\W?"([\d.]+)"/x).to_s
       return version_array.to_s unless version_array.blank?
     end
   end

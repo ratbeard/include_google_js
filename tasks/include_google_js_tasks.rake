@@ -1,5 +1,5 @@
 namespace :javascript do
-  libraries = %w[prototype scriptaculous jquery mootools dojo yui swfobject]
+  libraries = %w[prototype scriptaculous jquery jqueryui mootools dojo yui swfobject]
   namespace :get do
     require 'net/http'
     
@@ -32,17 +32,10 @@ namespace :javascript do
           end
         when "scriptaculous"
           # Scriptaculous - http://script.aculo.us/dist/scriptaculous-js-1.8.2.zip
+          unzip_js_library("http://script.aculo.us/dist/scriptaculous-js-1.8.2.zip")
           Dir.chdir("#{RAILS_ROOT}/public/javascripts") do
-            Net::HTTP.start("script.aculo.us") do |http|
-              zip = http.get("/dist/scriptaculous-js-1.8.2.zip")
-              open("scriptaculous.zip", 'w') {
-                |f| f.write(zip.body)
-              }
-              `unzip scriptaculous.zip`
-              `rm scriptaculous.zip`
-              `mv scriptaculous-js-1.8.2/src/* ../javascripts/`
-              `rm -rf scriptaculous-js-1.8.2`
-            end
+            `mv scriptaculous-js-1.8.2/src/* ./`
+            `rm -rf scriptaculous-js-1.8.2`
           end
         when "jquery"
           # jQuery - http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js
@@ -50,6 +43,14 @@ namespace :javascript do
             File.open("#{RAILS_ROOT}/public/javascripts/jquery.js", 'w') {
                 |f| f.write(http.get('/files/jquery-1.3.2.min.js').body)
               }
+          end
+        when "jqueryui"
+          # jQueryUI - http://www.jqueryui.com/download/jquery-ui-1.7.2.custom.zip
+          unzip_js_library("http://www.jqueryui.com/download/jquery-ui-1.7.2.custom.zip")
+          Dir.chdir("#{RAILS_ROOT}/public/javascripts") do
+            `mv js/jquery-1.3.2.min.js jquery.js`
+            `mv js/jquery-ui-1.7.2.custom.min.js jquery-ui.js `
+            `rm -rf js`
           end
         when "mootools"
           # mootools - http://mootools.net/download/get/mootools-1.2.2-core-yc.js
@@ -67,31 +68,27 @@ namespace :javascript do
           end
         when "yui"
           # YUI - http://yuilibrary.com/downloads/yui2/yui_2.7.0b.zip
-          Dir.chdir("#{RAILS_ROOT}/public/javascripts") do
-            Net::HTTP.start("yuilibrary.com") do |http|
-              zip = http.get("/downloads/yui2/yui_2.7.0b.zip")
-              open("yui.zip", 'w') {
-                |f| f.write(zip.body)
-              }
-              `unzip yui.zip`
-              `rm yui.zip`
-            end
-          end
+          unzip_js_library("http://yuilibrary.com/downloads/yui2/yui_2.7.0b.zip")
         when "swfobject"
           # swfobject - http://swfobject.googlecode.com/files/swfobject_2_1.zip
-          Dir.chdir("#{RAILS_ROOT}/public/javascripts") do
-            Net::HTTP.start("swfobject.googlecode.com") do |http|
-              zip = http.get("/files/swfobject_2_1.zip")
-              open("swfobject.zip", 'w') {
-                |f| f.write(zip.body)
-              }
-              `unzip swfobject.zip`
-              `rm swfobject.zip`
-            end
-          end
+          unzip_js_library("http://swfobject.googlecode.com/files/swfobject_2_1.zip")
         else
           puts "I don't know about #{name}, sorry! Please check for a newer version of include_google_js."
         end
+    end
+    
+    def unzip_js_library(path="")
+      path_parts = path.match(/http:\/\/([\w.]+)(\/[\w.\/-]+)/i)
+      Dir.chdir("#{RAILS_ROOT}/public/javascripts") do
+        Net::HTTP.start(path_parts[1]) do |http|
+          zip = http.get(path_parts[2])
+          open("lib.zip", 'w') {
+            |f| f.write(zip.body)
+          }
+          `unzip lib.zip`
+          `rm lib.zip`
+        end
+      end
     end
   end
   
@@ -116,14 +113,14 @@ namespace :javascript do
     case name
       when "yui"
         puts "Removing YUI from /public/javascripts/"
-        `rm -rf yui`
+        Dir.chdir("#{RAILS_ROOT}/public/javascripts") { `rm -rf yui` }
       when "scriptaculous"
         puts "Removing Scriptaculous files from /public/javascripts/"
         %w[scriptaculous builder controls dragdrop effects slider sound unittest].each do |file|
-          File.delete("#{RAILS_ROOT}/public/javascripts/#{file}.js")
+          Dir.chdir("#{RAILS_ROOT}/public/javascripts") { `rm #{file}.js` }
         end
       when "swfobject"
-        `rm -rf swfobject`
+        Dir.chdir("#{RAILS_ROOT}/public/javascripts") { `rm -rf swfobject` }
       else
         if File.exist?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{name}.js"))
           puts "Removing #{name} from /public/javascripts/"

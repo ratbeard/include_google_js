@@ -81,6 +81,10 @@ class IncludeGoogleJsTest < Test::Unit::TestCase
    assert_equal "1.3.2", IncludeGoogleJs.parse_jquery if js_exists("jquery")
   end
   
+  def test_parsing_jquery_ui_for_version
+   assert_equal "1.7.2", IncludeGoogleJs.parse_jquery_ui if js_exists("jqueryui")
+  end
+  
   def test_parsing_mootools_for_version
    assert_equal "1.2.2", IncludeGoogleJs.parse_mootools if js_exists("mootools")
   end
@@ -118,6 +122,8 @@ class IncludeGoogleJsTest < Test::Unit::TestCase
         File.exist?("#{RAILS_ROOT}/public/javascripts/yui/")
       when "swfobject"
         File.exist?("#{RAILS_ROOT}/public/javascripts/swfobject/")
+      when "jqueryui"
+        File.exist?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "jquery-ui.js"))    
       else
         File.exist?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "#{library}.js"))    
     end
