@@ -1,12 +1,10 @@
 module IncludeGoogleJs
   require 'ping'
   
-  @@javascript_expansions = { :defaults => ActionView::Helpers::AssetTagHelper::JAVASCRIPT_DEFAULT_SOURCES.dup }
   @@default_javascripts = ActionView::Helpers::AssetTagHelper::JAVASCRIPT_DEFAULT_SOURCES.dup
   @@google_js_libs = %w[prototype scriptaculous jquery jquery-ui mootools dojo yui swfobject]
   @@scriptaculous_files = %w[scriptaculous builder controls dragdrop effects slider sound unittest]
   @@default_google_js_libs = %w[prototype scriptaculous]
-  @@google_js_to_include = []
   
   def self.included(base) 
     base.alias_method_chain :javascript_include_tag, :google_js
@@ -100,29 +98,6 @@ module IncludeGoogleJs
     end
     html += %Q{</script>
       }
-  end
-  
-  def self.determine_if_google_hosts_files(javascript_files)
-    @@google_js_to_include = []
-    javascript_files.each do |file|
-      if @@google_js_libs.include?(file)
-        @@google_js_to_include << file
-      end
-      if @@scriptaculous_files.include?(file)
-        @@google_js_to_include << 'scriptaculous' unless @@google_js_to_include.include?('scriptaculous')
-      end
-    end
-    # remove any files from the array if Google hosts it
-    @@google_js_to_include.each do |file|
-      javascript_files.delete(file)
-    end
-    # remove all of the scriptaculous files
-    @@scriptaculous_files.each do |file|
-      javascript_files.delete(file)
-    end
-    # Sort the Google files to make sure Prototype is loaded before Scriptaculous
-    @@google_js_to_include.sort!
-    return javascript_files
   end
   
   def self.all_local_javascript_files
