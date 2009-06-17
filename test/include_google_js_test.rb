@@ -60,23 +60,23 @@ class IncludeGoogleJsTest < Test::Unit::TestCase
     should_not_match(string, unmatched_values)
   end
   
-  # def test_javascript_tag_for_scriptaculous_with_google
-  #   string           = javascript_include_tag("scriptaculous", :include_google_js => true)
-  #   matched_values   = ["google.load(\"prototype\", \"1.6.0.3\")", "google.load(\"scriptaculous\", \"1.8.2\")"]
-  #   unmatched_values = ["src=\"/javascripts/prototype.js"]
-  #   
-  #   should_match(string, matched_values)
-  #   should_not_match(string, unmatched_values)
-  # end
-  # 
-  # def test_javascript_tag_for_scriptaculous_without_google
-  #   string           = javascript_include_tag("scriptaculous", :include_google_js => false)
-  #   matched_values   = ["src=\"/javascripts/prototype.js", "src=\"/javascripts/scriptaculous.js"]
-  #   unmatched_values = ["google.load(\"prototype\", \"1.6.0.3\")", "google.load(\"scriptaculous\", \"1.8.2\")"]
-  #   
-  #   should_match(string, matched_values)
-  #   should_not_match(string, unmatched_values)
-  # end
+  def test_javascript_tag_for_scriptaculous_with_google
+    string           = javascript_include_tag("scriptaculous", :include_google_js => true)
+    matched_values   = ["google.load(\"prototype\", \"1.6.0.3\")", "google.load(\"scriptaculous\", \"1.8.2\")"]
+    unmatched_values = ["src=\"/javascripts/prototype.js"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
+  def test_javascript_tag_for_scriptaculous_without_google
+    string           = javascript_include_tag("scriptaculous", :include_google_js => false)
+    matched_values   = ["src=\"/javascripts/prototype.js", "src=\"/javascripts/scriptaculous.js"]
+    unmatched_values = ["google.load(\"prototype\", \"1.6.0.3\")", "google.load(\"scriptaculous\", \"1.8.2\")"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
   
   def test_javascript_tag_for_jquery_with_google
     string           = javascript_include_tag("jquery", :include_google_js => true)
@@ -96,23 +96,23 @@ class IncludeGoogleJsTest < Test::Unit::TestCase
     should_not_match(string, unmatched_values)
   end
   
-  # def test_javascript_tag_for_jquery_ui_with_google
-  #   string           = javascript_include_tag("jquery-ui", :include_google_js => true)
-  #   matched_values   = ["google.load(\"jquery\", \"1.3.2\")", ]
-  #   unmatched_values = ["src=\"/javascripts/jquery.js"]
-  #   
-  #   should_match(string, matched_values)
-  #   should_not_match(string, unmatched_values)
-  # end
-  # 
-  # def test_javascript_tag_for_jquery_ui_without_google
-  #   string           = javascript_include_tag("jquery-ui", :include_google_js => false)
-  #   matched_values   = ["src=\"/javascripts/jquery.js"]
-  #   unmatched_values = ["google.load(\"jquery\", \"1.3.2\")"]
-  #   
-  #   should_match(string, matched_values)
-  #   should_not_match(string, unmatched_values)
-  # end
+  def test_javascript_tag_for_jquery_ui_with_google
+    string           = javascript_include_tag("jquery-ui", :include_google_js => true)
+    matched_values   = ["google.load(\"jquery\", \"1.3.2\")", "google.load(\"jquery-ui\", \"1.7.2\")"]
+    unmatched_values = ["src=\"/javascripts/jquery.js"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
+  def test_javascript_tag_for_jquery_ui_without_google
+    string           = javascript_include_tag("jquery-ui", :include_google_js => false)
+    matched_values   = ["src=\"/javascripts/jquery.js", "src=\"/javascripts/jquery-ui.js"]
+    unmatched_values = ["google.load(\"jquery\", \"1.3.2\")"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
   
   def test_javascript_tag_for_all_with_google
     string           = javascript_include_tag(:all, :include_google_js => true)
@@ -147,7 +147,7 @@ class IncludeGoogleJsTest < Test::Unit::TestCase
   end
   
   def test_parsing_jquery_ui_for_version
-   assert_equal "1.7.2", IncludeGoogleJs.parse_jquery_ui if js_exists("jqueryui")
+   assert_equal "1.7.2", IncludeGoogleJs.parse_jquery_ui if js_exists("jquery-ui")
   end
   
   def test_parsing_mootools_for_version
@@ -253,6 +253,19 @@ class IncludeGoogleJsTest < Test::Unit::TestCase
     assert libraries["local"].include?("application")
     assert libraries["local"].include?("jquery")
     assert libraries["local"].include?("jquery-ui")
+  end
+  
+  # Library dependency checks
+  def test_if_prototype_added_to_scriptaculous_request
+    source = ["scriptaculous"]
+    updated_source = IncludeGoogleJs.check_for_dependencies(source)
+    assert_equal updated_source.first, "prototype"
+  end
+  
+  def test_if_jquery_added_to_jqueryui_request
+    source = ["jquery-ui"]
+    updated_source = IncludeGoogleJs.check_for_dependencies(source)
+    assert_equal updated_source.first, "jquery"
   end
   
   # helper methods

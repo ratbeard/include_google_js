@@ -58,6 +58,7 @@ module IncludeGoogleJs
         google_javascript_files += []
       end
     else
+      sources = IncludeGoogleJs.check_for_dependencies(sources)
       sources.collect do |source|
         if IncludeGoogleJs.does_google_host?(source) && use_google_libraries
           google_javascript_files << source
@@ -67,6 +68,15 @@ module IncludeGoogleJs
       end
     end
     return { "google" => google_javascript_files, "local" => local_javascript_files }
+  end
+  
+  def self.check_for_dependencies(source)
+    if source.include?("scriptaculous") && !source.include?("prototype")
+      source.unshift("prototype")
+    elsif source.include?("jquery-ui") && !source.include?("jquery")
+      source.unshift("jquery")
+    end
+    return source
   end
   
   def self.determine_source(source, collection)
@@ -84,8 +94,8 @@ module IncludeGoogleJs
       <script>
       }
       libraries.each do |js_lib|
-      version = versions.has_key?(js_lib.split("-")[0].to_sym) ? versions.fetch(js_lib.split("-")[0].to_sym) : IncludeGoogleJs.get_file_version(js_lib)
-      html += %Q{google.load("#{js_lib.split("-")[0]}", "#{version}");
+      version = versions.has_key?(js_lib.to_sym) ? versions.fetch(js_lib.to_sym) : IncludeGoogleJs.get_file_version(js_lib)
+      html += %Q{google.load("#{js_lib}", "#{version}");
       }
     end
     html += %Q{</script>
@@ -95,7 +105,7 @@ module IncludeGoogleJs
   def self.determine_if_google_hosts_files(javascript_files)
     @@google_js_to_include = []
     javascript_files.each do |file|
-      if @@google_js_libs.include?(file.split("-")[0])
+      if @@google_js_libs.include?(file)
         @@google_js_to_include << file
       end
       if @@scriptaculous_files.include?(file)
@@ -160,8 +170,8 @@ module IncludeGoogleJs
   def self.get_file_version(file)
     version = "1"
     # split file_name for instances where the file has a version number at the end
-    library = file.split("-")[0]
-    return IncludeGoogleJs.send("parse_#{library}")
+    # library = file.replace("-","_")
+    return IncludeGoogleJs.send("parse_#{file.gsub("-","_")}")
   end
   
   def self.parse_prototype(file="prototype")
