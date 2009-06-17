@@ -169,8 +169,6 @@ module IncludeGoogleJs
   
   def self.get_file_version(file)
     version = "1"
-    # split file_name for instances where the file has a version number at the end
-    # library = file.replace("-","_")
     return IncludeGoogleJs.send("parse_#{file.gsub("-","_")}")
   end
   
