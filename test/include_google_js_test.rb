@@ -41,6 +41,16 @@ class IncludeGoogleJsTest < Test::Unit::TestCase
     should_not_match(string, unmatched_values)
   end
   
+  def test_javascript_tag_for_prototype_with_google_and_cache
+    ActionController::Base.perform_caching = true
+    string           = javascript_include_tag("prototype", :include_google_js => true, :cache => true)
+    matched_values   = ["src=\"/javascripts/all.js"]
+    unmatched_values = ["google.load(\"prototype\", \"1.6.0.3\")"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
   def test_javascript_tag_for_prototype_without_google
     string           = javascript_include_tag("prototype", :include_google_js => false)
     matched_values   = ["src=\"/javascripts/prototype.js"]
@@ -154,6 +164,95 @@ class IncludeGoogleJsTest < Test::Unit::TestCase
   
   def test_parsing_swfobject_for_version
    assert_equal "2.1", IncludeGoogleJs.parse_swfobject if js_exists("swfobject")
+  end
+  
+  # IncludeGoogleJs.expand_javascript_sources(sources)
+  def test_all_sources_with_google_js
+    source = [:all]
+    use_google_js = true
+    libraries = IncludeGoogleJs.expand_javascript_sources(source,use_google_js)
+    assert libraries["google"].include?("prototype")
+    assert libraries["google"].include?("scriptaculous")
+    assert libraries["google"].include?("jquery")
+    assert libraries["google"].include?("jquery-ui")
+    assert libraries["google"].include?("dojo")
+    assert libraries["google"].include?("mootools")
+    assert !libraries["google"].include?("application")
+    assert libraries["local"].include?("application")
+  end
+  
+  # IncludeGoogleJs.expand_javascript_sources(sources)
+  def test_all_sources_without_google_js
+    source = [:all]
+    use_google_js = false
+    libraries = IncludeGoogleJs.expand_javascript_sources(source,use_google_js)
+    assert !libraries["google"].include?("prototype")
+    assert !libraries["google"].include?("scriptaculous")
+    assert !libraries["google"].include?("jquery")
+    assert !libraries["google"].include?("jquery-ui")
+    assert !libraries["google"].include?("dojo")
+    assert !libraries["google"].include?("mootools")
+    assert !libraries["google"].include?("application")
+    
+    assert libraries["local"].include?("prototype")
+    assert libraries["local"].include?("scriptaculous")
+    assert libraries["local"].include?("jquery")
+    assert libraries["local"].include?("jquery-ui")
+    assert libraries["local"].include?("dojo")
+    assert libraries["local"].include?("mootools")
+    assert libraries["local"].include?("application")
+  end
+  
+  def test_defaults_sources_with_google_js
+    source = [:defaults]
+    use_google_js = true
+    libraries = IncludeGoogleJs.expand_javascript_sources(source,use_google_js)
+    assert libraries["google"].include?("prototype")
+    assert libraries["google"].include?("scriptaculous")
+    assert !libraries["google"].include?("application")
+    assert !libraries["google"].include?("jquery")
+    assert libraries["local"].include?("application")
+  end
+  
+  def test_defaults_sources_without_google_js
+    source = [:defaults]
+    use_google_js = false
+    libraries = IncludeGoogleJs.expand_javascript_sources(source,use_google_js)
+    assert !libraries["google"].include?("prototype")
+    assert !libraries["google"].include?("scriptaculous")
+    assert !libraries["google"].include?("application")
+    assert !libraries["google"].include?("jquery")
+    
+    assert libraries["local"].include?("application")
+    assert libraries["local"].include?("prototype")
+    assert libraries["local"].include?("controls")
+    assert libraries["local"].include?("dragdrop")
+    assert libraries["local"].include?("effects")
+    assert !libraries["local"].include?("scriptaculous")
+  end
+  
+  def test_given_sources_with_google_js
+    source = ["jquery", "jquery-ui", "application"]
+    use_google_js = true
+    libraries = IncludeGoogleJs.expand_javascript_sources(source,use_google_js)
+    assert libraries["google"].include?("jquery")
+    assert libraries["google"].include?("jquery-ui")
+    assert !libraries["google"].include?("application")
+    assert !libraries["google"].include?("prototype")
+    assert libraries["local"].include?("application")
+  end
+  
+  def test_given_sources_without_google_js
+    source = ["jquery", "jquery-ui", "application"]
+    use_google_js = false
+    libraries = IncludeGoogleJs.expand_javascript_sources(source,use_google_js)
+    assert !libraries["google"].include?("jquery")
+    assert !libraries["google"].include?("jquery-ui")
+    assert !libraries["google"].include?("application")
+    assert !libraries["google"].include?("prototype")
+    assert libraries["local"].include?("application")
+    assert libraries["local"].include?("jquery")
+    assert libraries["local"].include?("jquery-ui")
   end
   
   # helper methods

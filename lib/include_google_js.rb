@@ -2,7 +2,7 @@ module IncludeGoogleJs
   require 'ping'
   
   @@javascript_expansions = { :defaults => ActionView::Helpers::AssetTagHelper::JAVASCRIPT_DEFAULT_SOURCES.dup }
-  @@use_google_js = false
+  @@default_javascripts = ActionView::Helpers::AssetTagHelper::JAVASCRIPT_DEFAULT_SOURCES.dup
   @@google_js_libs = %w[prototype scriptaculous jquery jquery-ui mootools dojo yui swfobject]
   @@scriptaculous_files = %w[scriptaculous builder controls dragdrop effects slider sound unittest]
   @@default_google_js_libs = %w[prototype scriptaculous]
@@ -14,34 +14,23 @@ module IncludeGoogleJs
   
   def javascript_include_tag_with_google_js(*sources)
     # split apart the sources, check for :cache, confirm that we're using :include_google_js, and grab :versions
-    libraries               = sources.extract_options!.stringify_keys
-    use_cache               = libraries.delete("cache")
-    javascript_versions     = libraries.delete("versions") || {}
-    @@use_google_js         = libraries.delete("include_google_js") && IncludeGoogleJs.confirm_internet_connection
-    
-    @@google_js_to_include  = []
+    options                 = sources.extract_options!.stringify_keys
+    use_cache               = options.delete("cache")
+    javascript_versions     = options.delete("versions") || {}
+    use_google_js           = options.delete("include_google_js") && IncludeGoogleJs.confirm_internet_connection
     
     if ActionController::Base.perform_caching && use_cache # Using the locally cached libraries
-      joined_javascript_name = (cache == true ? "all" : use_cache) + ".js"
+      joined_javascript_name = (use_cache == true ? "all" : use_cache) + ".js"
       joined_javascript_path = File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, joined_javascript_name)
 
       write_asset_file_contents(joined_javascript_path, compute_javascript_paths(sources))
-      javascript_src_tag(joined_javascript_name, libraries)
-    else # Using Google libraries
-      base_html = IncludeGoogleJs.expand_javascript_sources(sources).collect { |source| javascript_src_tag(source, libraries) }.join("\n")
-      if @@use_google_js
-        html = %Q{
-          <script src='http://www.google.com/jsapi'></script>
-          <script>
-          }
-        @@google_js_to_include.each do |js_lib|
-          version = javascript_versions.has_key?(js_lib.split("-")[0].to_sym) ? javascript_versions.fetch(js_lib.split("-")[0].to_sym) : IncludeGoogleJs.get_file_version(js_lib)
-          html += %Q{google.load("#{js_lib.split("-")[0]}", "#{version}");
-          }
-        end
-        html += %Q{</script>
-          #{base_html}
-          }
+      return javascript_src_tag(joined_javascript_name, options)
+    else
+      libraries = IncludeGoogleJs.expand_javascript_sources(sources, use_google_js)
+      base_html = libraries["local"].collect { |source| javascript_src_tag(source, options) }.join("\n") # local JS files
+      if use_google_js
+        html = IncludeGoogleJs.google_script_tags(libraries["google"],javascript_versions)
+        html += base_html
       else
         html = base_html
       end
@@ -49,30 +38,35 @@ module IncludeGoogleJs
     end
   end
 
-  def self.expand_javascript_sources(sources)
+  def self.expand_javascript_sources(sources,use_google_libraries)
+    local_javascript_files  = []
+    google_javascript_files = []
     if sources.include?(:all) # All libraries, get everything in the javascripts folder, see which are hosted by Google
-      if @@use_google_js
-        local_javascript_files = IncludeGoogleJs.all_non_hosted_local_javascript_files
-        @@google_js_to_include = IncludeGoogleJs.all_google_hosted_local_javascript_files
+      if use_google_libraries
+        local_javascript_files += IncludeGoogleJs.all_non_hosted_local_javascript_files
+        google_javascript_files += IncludeGoogleJs.all_google_hosted_local_javascript_files
       else
-        local_javascript_files = IncludeGoogleJs.all_local_javascript_files
-        @@google_js_to_include = []
+        local_javascript_files += IncludeGoogleJs.all_local_javascript_files
+        google_javascript_files += []
       end
-      @@all_javascript_sources = ((IncludeGoogleJs.determine_source(:defaults, @@javascript_expansions).dup & local_javascript_files) + local_javascript_files).uniq
+    elsif sources.include?(:defaults)
+      if use_google_libraries
+        local_javascript_files += %w[application]
+        google_javascript_files += IncludeGoogleJs.default_sources      
+      else
+        local_javascript_files += @@default_javascripts + %w[application]
+        google_javascript_files += []
+      end
     else
-      defaults = sources.include?(:defaults)
-      expanded_sources = []
-      if defaults && @@use_google_js
-        expanded_sources += IncludeGoogleJs.default_sources 
-      else
-        expanded_sources += sources.collect do |source|
-          IncludeGoogleJs.determine_source(source, @@javascript_expansions)
-        end.flatten
+      sources.collect do |source|
+        if IncludeGoogleJs.does_google_host?(source) && use_google_libraries
+          google_javascript_files << source
+        else
+          local_javascript_files << source
+        end
       end
-      expanded_sources = IncludeGoogleJs.determine_if_google_hosts_files(expanded_sources) if @@use_google_js
-      expanded_sources << "application" if File.exist?(File.join(ActionView::Helpers::AssetTagHelper::JAVASCRIPTS_DIR, "application.js")) && defaults
-      return expanded_sources
     end
+    return { "google" => google_javascript_files, "local" => local_javascript_files }
   end
   
   def self.determine_source(source, collection)
@@ -82,6 +76,20 @@ module IncludeGoogleJs
     else
       source
     end
+  end
+  
+  def self.google_script_tags(libraries,versions)
+    html = %Q{
+      <script src='http://www.google.com/jsapi'></script>
+      <script>
+      }
+      libraries.each do |js_lib|
+      version = versions.has_key?(js_lib.split("-")[0].to_sym) ? versions.fetch(js_lib.split("-")[0].to_sym) : IncludeGoogleJs.get_file_version(js_lib)
+      html += %Q{google.load("#{js_lib.split("-")[0]}", "#{version}");
+      }
+    end
+    html += %Q{</script>
+      }
   end
   
   def self.determine_if_google_hosts_files(javascript_files)
