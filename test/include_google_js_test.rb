@@ -50,19 +50,74 @@ class IncludeGoogleJsTest < Test::Unit::TestCase
     should_not_match(string, unmatched_values)
   end
   
-  def test_javascript_tag_for_prototype_with_google
-    string           = javascript_include_tag("prototype", :include_google_js => true)
-    matched_values   = ["google.load(\"prototype\", \"1.6.0.3\")"]
-    unmatched_values = ["src=\"/javascripts/prototype.js"]
+  # def test_javascript_tag_for_scriptaculous_with_google
+  #   string           = javascript_include_tag("scriptaculous", :include_google_js => true)
+  #   matched_values   = ["google.load(\"prototype\", \"1.6.0.3\")", "google.load(\"scriptaculous\", \"1.8.2\")"]
+  #   unmatched_values = ["src=\"/javascripts/prototype.js"]
+  #   
+  #   should_match(string, matched_values)
+  #   should_not_match(string, unmatched_values)
+  # end
+  # 
+  # def test_javascript_tag_for_scriptaculous_without_google
+  #   string           = javascript_include_tag("scriptaculous", :include_google_js => false)
+  #   matched_values   = ["src=\"/javascripts/prototype.js", "src=\"/javascripts/scriptaculous.js"]
+  #   unmatched_values = ["google.load(\"prototype\", \"1.6.0.3\")", "google.load(\"scriptaculous\", \"1.8.2\")"]
+  #   
+  #   should_match(string, matched_values)
+  #   should_not_match(string, unmatched_values)
+  # end
+  
+  def test_javascript_tag_for_jquery_with_google
+    string           = javascript_include_tag("jquery", :include_google_js => true)
+    matched_values   = ["google.load(\"jquery\", \"1.3.2\")"]
+    unmatched_values = ["src=\"/javascripts/jquery.js"]
     
     should_match(string, matched_values)
     should_not_match(string, unmatched_values)
   end
   
-  def test_javascript_tag_for_prototype_without_google
-    string           = javascript_include_tag("prototype", :include_google_js => false)
-    matched_values   = ["src=\"/javascripts/prototype.js"]
-    unmatched_values = ["google.load(\"prototype\", \"1.6.0.3\")"]
+  def test_javascript_tag_for_jquery_without_google
+    string           = javascript_include_tag("jquery", :include_google_js => false)
+    matched_values   = ["src=\"/javascripts/jquery.js"]
+    unmatched_values = ["google.load(\"jquery\", \"1.3.2\")"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
+  # def test_javascript_tag_for_jquery_ui_with_google
+  #   string           = javascript_include_tag("jquery-ui", :include_google_js => true)
+  #   matched_values   = ["google.load(\"jquery\", \"1.3.2\")", ]
+  #   unmatched_values = ["src=\"/javascripts/jquery.js"]
+  #   
+  #   should_match(string, matched_values)
+  #   should_not_match(string, unmatched_values)
+  # end
+  # 
+  # def test_javascript_tag_for_jquery_ui_without_google
+  #   string           = javascript_include_tag("jquery-ui", :include_google_js => false)
+  #   matched_values   = ["src=\"/javascripts/jquery.js"]
+  #   unmatched_values = ["google.load(\"jquery\", \"1.3.2\")"]
+  #   
+  #   should_match(string, matched_values)
+  #   should_not_match(string, unmatched_values)
+  # end
+  
+  def test_javascript_tag_for_all_with_google
+    string           = javascript_include_tag(:all, :include_google_js => true)
+    matched_values   = ["google.load(\"prototype\", \"1.6.0.3\")", "google.load(\"scriptaculous\", \"1.8.2\")", "src=\"/javascripts/application.js","google.load(\"jquery\", \"1.3.2\")", "application.js"]
+    unmatched_values = ["src=\"/javascripts/jquery.js"]
+    
+    should_match(string, matched_values)
+    should_not_match(string, unmatched_values)
+  end
+  
+  def test_javascript_tag_for_all_without_google
+    string           = javascript_include_tag(:all, :include_google_js => false)
+  
+    matched_values   = ["src=\"/javascripts/jquery.js"]
+    unmatched_values = ["google.load(\"jquery\", \"1.3.2\")"]
     
     should_match(string, matched_values)
     should_not_match(string, unmatched_values)
@@ -101,7 +156,7 @@ class IncludeGoogleJsTest < Test::Unit::TestCase
    assert_equal "2.1", IncludeGoogleJs.parse_swfobject if js_exists("swfobject")
   end
   
-  private
+  # helper methods
   def should_match(string="", values=[])
     check_values(string,values,true)
   end
@@ -112,7 +167,7 @@ class IncludeGoogleJsTest < Test::Unit::TestCase
 
   def check_values(string, values=[], match=true)
     values.each do |value|
-      assert match ? string.include?(value) : !string.include?(value)
+      assert match ? string.include?(value) : !string.include?(value), "<#{value}>  was not found in #{string}"
     end
   end
   
