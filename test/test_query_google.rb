@@ -14,8 +14,17 @@ class TestQueryGoogle < Test::Unit::TestCase
   
   def test_multiple_libraries_returned
     result = Query::Google.new.libs
-    assert(result.length > 3)
-    assert
+    assert(true, result.length > 3)
+  end
+  
+
+  def test_js_library_fields
+    lib = Query::Google.new.libs.first
+    assert_not_nil(lib.name)
+    assert_not_nil(lib.versions)
+    # assert_not_nil(lib.compressed?)
+    # assert_not_nil(lib.compressed?)
+    
   end
   
   

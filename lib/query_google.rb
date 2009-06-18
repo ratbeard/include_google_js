@@ -3,6 +3,8 @@ require 'net/http'
 require 'rubygems'
 require 'hpricot'
 
+require 'js_library'
+
 module IncludeGoogleJs
   module Query
     class Google
@@ -24,8 +26,19 @@ module IncludeGoogleJs
                    
       
       def libs
-        doc / 'dl.al-liblist'
-      end    
+        @libs ||= 
+          (doc / 'dl.al-liblist').map {|lib| 
+            attrs = extract_lib_attributes(lib)
+            IncludeGoogleJs::JsLibrary.new(attrs)
+          }
+      end                                
+      
+      def extract_lib_attributes(lib_html)
+        { 
+          :name => (doc / '.al-libname').text, 
+          :versions => [1,2]
+        }
+      end
 
 
 
