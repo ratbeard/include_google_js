@@ -23,7 +23,7 @@ class TestQueryGoogle < Test::Unit::TestCase
     libs = google.libs
     lib_names = libs.map {|l| l.name }      
     # then
-    assert(libs.length > 3)
+    assert(libs.length >= 9)
     assert(lib_names.include?('swfobject'))
     assert(lib_names.include?('jquery'))  
     assert(lib_names.include?('jqueryui'))  
@@ -38,15 +38,13 @@ class TestQueryGoogle < Test::Unit::TestCase
     assert(! lib_names.include?('jQuery'))               
   end
   
-                             
-  
-  def test_js_library_fields
-    # assert_not_nil(lib.name)
-    # assert_not_nil(lib.versions)
-    # assert_not_nil(lib.compressed?)
-    # assert_not_nil(lib.compressed?)
-    
+  # google has commited to maintain all versions of libraries
+  def test_js_library_versions
+    # given
+    libs = google.libs
+    jquery = libs.find {|lib| lib.name == 'jquery'}
+    # then
+    assert(jquery.versions.length >= 5)
+    assert(jquery.versions.include?('1.3.2'))
   end
-  
-  
 end
