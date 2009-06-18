@@ -11,26 +11,29 @@ module IncludeGoogleJs
       def url 
         "http://code.google.com/apis/ajaxlibs/documentation/"
       end
-      
-      # html body.  memoized
+
+      # get html body.  memoized
       def fetch
         @response ||= Net::HTTP.get_response(URI.parse(url).host, URI.parse(url).path)
         @response.body
       end
-                 
-      # html body as hpricot doc.  memoized
-      def doc
-        @doc ||= Hpricot(fetch)
-      end   
-      
+
+      # Get list of JsLibraries
       def libs
         @libs ||= 
-          (doc / 'dl.al-liblist').map {|lib| 
-            attrs = extract_lib_attributes(lib)  
-            IncludeGoogleJs::JsLibrary.new(attrs)
-          }
+        (doc / 'dl.al-liblist').map {|lib| 
+          attrs = extract_lib_attributes(lib)  
+          IncludeGoogleJs::JsLibrary.new(attrs)
+        }
       end                                
-                                          
+
+
+      private                     
+      # hpricot doc of html body.  memoized
+      def doc
+        @doc ||= Hpricot(fetch)
+      end
+
       # convert an [] of elems to a hash of props
       # calling inner_text gives us a str like:  "name: jquery"      
       # we split it at first ':', then strip out whitespace.
@@ -42,19 +45,13 @@ module IncludeGoogleJs
         transform = Hash.new(lambda {|val| val})
         transform.merge! \
           "versions" => lambda {|val| val.split(', ')}
-        
+
         (lib_html / 'dd.al-libstate').inject({}) do |accum, prop|
           key, val = prop.inner_text.split(":", 2).map {|s| s.strip}               
           accum[key] = transform[key].call(val)
           accum
         end
       end  
-      
-
-
-
-
     end
-
   end
 end
