@@ -1,5 +1,7 @@
 $:.unshift(File.dirname(__FILE__) + '/../lib')
 
+# to see available libraries, run:
+# rake -f tasks/query.rake javascripts:libs:available
 
 
 namespace :javascripts do
