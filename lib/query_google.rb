@@ -28,16 +28,22 @@ module IncludeGoogleJs
       def libs
         @libs ||= 
           (doc / 'dl.al-liblist').map {|lib| 
-            attrs = extract_lib_attributes(lib)
+            attrs = extract_lib_attributes(lib)  
+            require 'pp'
+            pp attrs
             IncludeGoogleJs::JsLibrary.new(attrs)
           }
       end                                
       
       def extract_lib_attributes(lib_html)
-        { 
-          :name => (doc / '.al-libname').text, 
-          :versions => [1,2]
-        }
+        # require 'rubygems'; require 'ruby-debug'; debugger
+        (lib_html / 'dd.al-libstate').inject({}) do |accum, prop|
+          # inner_text looks like:  "name: jquery"
+          key, val = prop.inner_text.split
+          accum[key.strip] = val.strip
+          accum
+        end
+        
       end
 
 
