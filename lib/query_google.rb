@@ -8,7 +8,6 @@ require 'js_library'
 module IncludeGoogleJs
   module Query
     class Google
-
       def url 
         "http://code.google.com/apis/ajaxlibs/documentation/"
       end
@@ -22,29 +21,35 @@ module IncludeGoogleJs
       # html body as hpricot doc.  memoized
       def doc
         @doc ||= Hpricot(fetch)
-      end
-                   
+      end   
       
       def libs
         @libs ||= 
           (doc / 'dl.al-liblist').map {|lib| 
             attrs = extract_lib_attributes(lib)  
-            require 'pp'
-            pp attrs
             IncludeGoogleJs::JsLibrary.new(attrs)
           }
       end                                
-      
+                                          
+      # convert an [] of elems to a hash of props
+      # calling inner_text gives us a str like:  "name: jquery"      
+      # we split it at first ':', then strip out whitespace.
+      # Then, call a trasnform on the value.  By default, this
+      # just returns the value back.  But this can be overriden
+      # based on the key name.  For example, we convert versions
+      # in to an array
       def extract_lib_attributes(lib_html)
-        # require 'rubygems'; require 'ruby-debug'; debugger
+        transform = Hash.new(lambda {|val| val})
+        transform.merge! \
+          "versions" => lambda {|val| val.split(', ')}
+        
         (lib_html / 'dd.al-libstate').inject({}) do |accum, prop|
-          # inner_text looks like:  "name: jquery"
-          key, val = prop.inner_text.split
-          accum[key.strip] = val.strip
+          key, val = prop.inner_text.split(":", 2).map {|s| s.strip}               
+          accum[key] = transform[key].call(val)
           accum
         end
-        
-      end
+      end  
+      
 
 
 

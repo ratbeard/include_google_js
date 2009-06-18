@@ -24,19 +24,21 @@ class TestQueryGoogle < Test::Unit::TestCase
   def test_expected_libraries_returned
     # given
     libs = google.libs
-    lib_names = libs.map {|l| l.name }
+    lib_names = libs.map {|l| l.name }      
     # then
-    assert(true, libs.length > 3)
-    assert(true, lib_names.include?('swfobject'))
-    assert(true, lib_names.include?('jquery'))  
-    assert(true, lib_names.include?('jqueryui'))  
-    assert(true, lib_names.include?('prototype'))  
-    assert(true, lib_names.include?('scriptaculous'))  
-    assert(true, lib_names.include?('mootools'))  
-    assert(true, lib_names.include?('dojo'))  
-    assert(true, lib_names.include?('yui'))      
-    assert(true, lib_names.include?('ext-core'))          
-    # puts lib_names.inspect                  
+    assert(libs.length > 3)
+    assert(lib_names.include?('swfobject'))
+    assert(lib_names.include?('jquery'))  
+    assert(lib_names.include?('jqueryui'))  
+    assert(lib_names.include?('prototype'))  
+    assert(lib_names.include?('scriptaculous'))  
+    assert(lib_names.include?('mootools'))  
+    assert(lib_names.include?('dojo'))  
+    assert(lib_names.include?('yui'))      
+    assert(lib_names.include?('ext-core'))
+    #                 
+    assert(! lib_names.include?('atlas'))
+    assert(! lib_names.include?('jQuery'))          
     # puts google.libs           
   end
   
