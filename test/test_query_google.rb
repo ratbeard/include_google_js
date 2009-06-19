@@ -21,7 +21,7 @@ class TestQueryGoogle < Test::Unit::TestCase
   def test_expected_libraries_returned
     # given
     libs = google.libs
-    lib_names = libs.map {|l| l.name }      
+    lib_names = libs.map {|l| l.name }        
     # then
     assert(libs.length >= 9)
     assert(lib_names.include?('swfobject'))
@@ -40,9 +40,8 @@ class TestQueryGoogle < Test::Unit::TestCase
   
   # google has commited to maintain all versions of libraries
   def test_js_library_versions
-    # given
-    libs = google.libs
-    jquery = libs.find {|lib| lib.name == 'jquery'}
+    # given  
+    jquery = google.libs.find {|lib| lib.name == 'jquery'}
     # then
     assert(jquery.versions.length >= 5)
     assert(jquery.versions.include?('1.3.2'))

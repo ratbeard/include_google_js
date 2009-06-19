@@ -13,7 +13,13 @@ module IncludeGoogleJs
       opts[:version] ||= latest_version
       # ...
     end
-          
+           
+    # TODO
+    def uri(opts={})
+      version = opts[:version] || latest_version
+      "http://#{version}"
+    end
+    
     def latest_version
       versions.last
     end
